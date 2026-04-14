@@ -1,4 +1,4 @@
-# Nginx Reverse Proxy Setup on Raspberry Pi
+# Raspberry Pi Nginx Reverse Proxy Setup
 
 ## Context
 
