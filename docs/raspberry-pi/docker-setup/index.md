@@ -1,25 +1,29 @@
-# Raspberry Pi 3 Dcoker Setup
+# Docker Setup
 
-## Prerequisites
+Guide for installing Docker and Docker Compose on a Debian-based Linux system. Works on Raspberry Pi (any model), Ubuntu, Debian, and derivatives.
 
-- Raspberry Pi 3 (Model B or B+)
-- MicroSD card (16 GB minimum, Class 10 recommended)
-- Power supply (5V/2.5A micro-USB)
-- Monitor, keyboard, and mouse (for initial setup), or SSH access
-- A computer to flash the SD card
+## Contents
+
+- [Install Docker](#install-docker)
+- [Install Docker Compose](#install-docker-compose)
+- [Enable Docker on Boot](#enable-docker-on-boot)
+- [Verify the Setup](#verify-the-setup)
+- [Useful Commands](#useful-commands)
+- [Troubleshooting](#troubleshooting)
 
 ---
 
-## 6. Install Docker
+## Install Docker
 
-### 6.1 Install using the Official Script
+### Using the official script
 
 ```bash
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
+rm get-docker.sh
 ```
 
-### 6.2 Add Your User to the Docker Group
+### Add your user to the Docker group
 
 This allows running Docker commands without `sudo`:
 
@@ -33,7 +37,7 @@ Log out and back in for the group change to take effect:
 logout
 ```
 
-Reconnect via SSH, then verify:
+Reconnect, then verify:
 
 ```bash
 docker run hello-world
@@ -43,7 +47,7 @@ Expected output should include: `Hello from Docker!`
 
 ---
 
-## 7. Install Docker Compose
+## Install Docker Compose
 
 Docker Compose v2 is included as a Docker plugin. Verify it is available:
 
@@ -59,7 +63,7 @@ sudo apt install -y docker-compose-plugin
 
 ---
 
-## 8. Enable Docker to Start on Boot
+## Enable Docker on Boot
 
 ```bash
 sudo systemctl enable docker
@@ -74,28 +78,19 @@ sudo systemctl status docker
 
 ---
 
-## 9. Verify the Full Setup
+## Verify the Setup
 
 ```bash
-# Check Docker version
 docker --version
-
-# Check Docker Compose version
 docker compose version
-
-# Run a test container
 docker run hello-world
-
-# List running containers
 docker ps
-
-# List all containers
 docker ps -a
 ```
 
 ---
 
-## Useful Docker Commands
+## Useful Commands
 
 | Command | Description |
 |---|---|
@@ -126,16 +121,6 @@ groups $USER
 ```
 
 `docker` should appear in the list.
-
-### Cannot connect via SSH
-
-- Confirm SSH is enabled in `raspi-config`.
-- Check the Pi's IP address.
-- Ensure the Pi is on the same network.
-
-### SD card not expanded
-
-Run `sudo raspi-config` > **Advanced Options** > **Expand Filesystem**, then reboot.
 
 ### Docker service fails to start
 

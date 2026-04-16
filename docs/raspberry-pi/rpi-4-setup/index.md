@@ -5,14 +5,14 @@ Guide for preparing a Raspberry Pi 4 (Model B) to act as a headless home server.
 ## Contents
 
 - [Prerequisites](#prerequisites)
-- [1. Choose the OS](#1-choose-the-os)
-- [2. Flash the SD Card with Raspberry Pi Imager](#2-flash-the-sd-card-with-raspberry-pi-imager)
-- [3. First Boot](#3-first-boot)
-- [4. Update the System](#4-update-the-system)
-- [5. Install Base CLI Tools](#5-install-base-cli-tools)
-- [6. Remote SSH Access (On-Demand)](#6-remote-ssh-access-on-demand)
-- [7. Network Configuration](#7-network-configuration)
-- [8. Limit Journal Size](#8-limit-journal-size)
+- [Choose the OS](#choose-the-os)
+- [Flash the SD Card with Raspberry Pi Imager](#flash-the-sd-card-with-raspberry-pi-imager)
+- [First Boot](#first-boot)
+- [Update the System](#update-the-system)
+- [Install Base CLI Tools](#install-base-cli-tools)
+- [Remote SSH Access (On-Demand)](#remote-ssh-access-on-demand)
+- [Network Configuration](#network-configuration)
+- [Limit Journal Size](#limit-journal-size)
 - [Appendix](#appendix)
   - [A. Thermal Monitoring](#a-thermal-monitoring)
   - [B. USB SSD Boot](#b-usb-ssd-boot)
@@ -28,7 +28,7 @@ Guide for preparing a Raspberry Pi 4 (Model B) to act as a headless home server.
 
 ---
 
-## 1. Choose the OS
+## Choose the OS
 
 For a Pi 4 used as a server, use **Raspberry Pi OS (64-bit) Lite**.
 
@@ -61,7 +61,7 @@ Exit the desktop session to return to the CLI. This keeps the Pi in lean headles
 
 ---
 
-## 2. Flash the SD Card with Raspberry Pi Imager
+## Flash the SD Card with Raspberry Pi Imager
 
 1. Download **Raspberry Pi Imager** from [raspberrypi.com/software](https://www.raspberrypi.com/software/).
 2. Insert the MicroSD card into your computer.
@@ -70,7 +70,7 @@ Exit the desktop session to return to the CLI. This keeps the Pi in lean headles
 5. Click **Choose Storage** → select the MicroSD card (or USB SSD if booting from USB).
 6. Click **Next** → when prompted *"Would you like to apply OS customisation settings?"*, click **Edit Settings**.
 
-### 2.1 Customisation — General tab
+### Customisation — General tab
 
 | Setting | Value |
 |---|---|
@@ -80,14 +80,14 @@ Exit the desktop session to return to the CLI. This keeps the Pi in lean headles
 
 > Wi-Fi is intentionally not configured here so the image stays portable across networks. **Connect the Pi to your router via Ethernet for the first boot** — it's the simplest way to get a reliable connection and SSH in, regardless of the network you're on. Wi-Fi (if needed) can be configured after first login.
 
-### 2.2 Customisation — Services tab
+### Customisation — Services tab
 
 | Setting | Value |
 |---|---|
 | Enable SSH | ✅ Yes |
 | Authentication | Password (for now) — or paste the contents of `~/.ssh/id_ed25519.pub` to enable key-only login from first boot (recommended). |
 
-### 2.3 Customisation — Options tab
+### Customisation — Options tab
 
 | Setting | Value |
 |---|---|
@@ -95,13 +95,13 @@ Exit the desktop session to return to the CLI. This keeps the Pi in lean headles
 | Eject media when finished | ✅ Yes (safer unplug) |
 | Enable telemetry | Personal choice |
 
-### 2.4 Write
+### Write
 
 Click **Save** → **Yes** to apply customisation → **Yes** to confirm erase → wait for writing and verification to finish (~5–10 min depending on card speed).
 
 ---
 
-## 3. First Boot
+## First Boot
 
 1. Insert the MicroSD card into the Pi (or plug in the SSD if booting from USB).
 2. Plug in an Ethernet cable to your router.
@@ -124,7 +124,7 @@ ssh <your-username>@<pi-ip>
 
 ---
 
-## 4. Update the System
+## Update the System
 
 Always update immediately after first boot to pull in security patches and bug fixes released since the OS image was built.
 
@@ -165,7 +165,7 @@ vcgencmd measure_temp # SoC temperature — keep an eye on this on the Pi 4
 
 ---
 
-## 5. Install Base CLI Tools
+## Install Base CLI Tools
 
 A small set of utilities useful on any server. Most are already present on Pi OS Lite; this ensures they're installed and up to date.
 
@@ -191,7 +191,7 @@ curl --version | head -1
 
 ---
 
-## 6. Remote SSH Access (On-Demand)
+## Remote SSH Access (On-Demand)
 
 For a test/dev server, the simplest safe approach is to keep SSH **LAN-only by default** and only forward the port on the router **temporarily** when remote access is actually needed. This avoids permanent internet exposure and eliminates the need for dedicated VPN software, additional services on the Pi, or any third-party dependency.
 
@@ -235,13 +235,13 @@ If you find yourself opening/closing the port-forward often, it's worth revisiti
 
 ---
 
-## 7. Network Configuration
+## Network Configuration
 
 For a server, you want a **predictable address on the home LAN** so you can always SSH to the same IP, set up port-forwards, reverse proxies, etc. The approach below assigns a pure static IP to the Ethernet interface.
 
-If the Pi is later moved to a different network, the static config must be updated for that subnet, or temporarily switched back to DHCP (see 7.2.6).
+If the Pi is later moved to a different network, the static config must be updated for that subnet, or temporarily switched back to DHCP (see "Moving the Pi to another network" below).
 
-### 7.1 Identify the active network stack
+### Identify the active network stack
 
 Different OS versions use different network managers. Check which one is active:
 
@@ -253,13 +253,13 @@ systemctl is-active systemd-networkd
 
 Only one should report `active`. Follow the matching subsection below:
 
-- **NetworkManager** → section 7.2 (default on current Raspberry Pi OS)
+- **NetworkManager** → see NetworkManager subsection below (default on current Raspberry Pi OS)
 - **dhcpcd** → not covered yet; config lives in `/etc/dhcpcd.conf`
 - **systemd-networkd** → not covered yet; config lives in `/etc/netplan/*.yaml`
 
-### 7.2 NetworkManager
+### NetworkManager
 
-#### 7.2.1 List connections
+#### List connections
 
 ```bash
 nmcli connection show
@@ -267,7 +267,7 @@ nmcli connection show
 
 Identify the Ethernet connection (typically named `Wired connection 1`, device `eth0`). Note its **NAME** — you'll pass it to `nmcli` in the commands below.
 
-#### 7.2.2 (Optional) Rename the connection
+#### (Optional) Rename the connection
 
 A shorter, meaningful name is easier to work with:
 
@@ -277,7 +277,7 @@ sudo nmcli connection modify 'Wired connection 1' connection.id eth0-home
 
 All subsequent commands use `eth0-home`; substitute your actual connection name if you didn't rename.
 
-#### 7.2.3 Configure a static IP, gateway, and DNS
+#### Configure a static IP, gateway, and DNS
 
 ```bash
 sudo nmcli connection modify eth0-home ipv4.method manual ipv4.addresses <static-ip>/24 ipv4.gateway <gateway-ip> ipv4.dns "1.1.1.1 8.8.8.8"
@@ -297,7 +297,7 @@ What each setting does:
 | `ipv4.gateway` | Default route — the router that forwards traffic off the LAN. |
 | `ipv4.dns` | DNS servers in priority order. Cloudflare primary, Google as fallback — mixing providers gives better resilience. |
 
-#### 7.2.4 Apply changes
+#### Apply changes
 
 **With physical access to the Pi** (keyboard/monitor), bounce the interface — fast and easy to iterate if something's off:
 
@@ -316,7 +316,7 @@ Both drop any active SSH session and both leave you locked out if the config is 
 
 Reconnect at the new static IP after ~10 seconds (bounce) or ~30–60 seconds (reboot).
 
-#### 7.2.5 Verify
+#### Verify
 
 ```bash
 ip addr show eth0      # should show the static IP
@@ -327,7 +327,7 @@ ping -c 2 1.1.1.1
 ping -c 2 google.com   # confirms DNS resolution works
 ```
 
-#### 7.2.6 Moving the Pi to another network
+#### Moving the Pi to another network
 
 If the Pi is relocated to a different LAN, the static config won't match and networking will fail. Two options:
 
@@ -345,7 +345,7 @@ sudo nmcli connection modify eth0-home ipv4.addresses <new-static-ip>/24 ipv4.ga
 sudo nmcli connection up eth0-home
 ```
 
-### 7.3 Reserve the IP on the router (recommended)
+### Reserve the IP on the router (recommended)
 
 Applies regardless of which network stack is in use. Even with a static IP on the Pi, add a **DHCP reservation / binding** on the router mapping the Pi's MAC to the chosen IP. This prevents the router from handing the same IP out to another device and keeps the LAN clean.
 
@@ -357,7 +357,7 @@ cat /sys/class/net/eth0/address
 
 ---
 
-## 8. Limit Journal Size
+## Limit Journal Size
 
 `systemd-journald` stores system and service logs. By default there's no hard size cap — it can grow up to 10% of the filesystem, competing with apps for space on a small SD card.
 
