@@ -1,13 +1,26 @@
-# Raspberry Pi Nginx Reverse Proxy Setup
+# Nginx Reverse Proxy Setup
+
+Guide for setting up nginx as a reverse proxy on a Debian-based Linux system (Raspberry Pi, Ubuntu, Debian, etc.). The examples below use a home server behind a router with Cloudflare managing DNS, but the nginx configuration applies to any environment.
+
+## Contents
+
+- [Context](#context)
+- [Infrastructure Overview](#infrastructure-overview)
+- [Installation](#installation)
+- [nginx Configs](#nginx-configs)
+- [Enabling Sites](#enabling-sites)
+- [Testing](#testing)
+- [Issues & Fixes](#issues--fixes)
+- [Notes](#notes)
 
 ## Context
 
-A Raspberry Pi at home (`192.168.58.200`) serves as a local server hosting multiple apps. The router maps inbound internet traffic to the Pi, and Cloudflare manages DNS for the domains. All traffic flows through nginx on port 80, which proxies to the individual apps running on internal ports.
+A home server (`192.168.58.200`) hosts multiple apps. The router maps inbound internet traffic to the server, and Cloudflare manages DNS for the domains. All traffic flows through nginx on port 80, which proxies to the individual apps running on internal ports.
 
 ## Infrastructure Overview
 
 ```
-Internet → Cloudflare (DNS + Proxy) → Public IP 38.188.254.30 → Router NAT → Pi:80 → nginx → App
+Internet → Cloudflare (DNS + Proxy) → Public IP 38.188.254.30 → Router NAT → Server:80 → nginx → App
 ```
 
 ### Port Assignments
@@ -112,5 +125,5 @@ The `-H "Host: ..."` header is required because nginx routes requests based on t
 ## Notes
 
 - Cloudflare handles SSL termination — nginx communicates with Cloudflare over HTTP on port 80, which is fine since that leg is within Cloudflare's edge network.
-- The Astro app runs as a Docker container. The .NET API runs directly on the Pi.
+- The Astro app runs as a Docker container. The .NET API runs directly on the server.
 - Both `spenbify.com` and `ikobit.com` resolve to the same public IP (`38.188.254.30`). nginx differentiates them via the `server_name` directive.
