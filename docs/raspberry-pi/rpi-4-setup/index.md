@@ -1,6 +1,6 @@
-# Raspberry Pi 3 Setup
+# Raspberry Pi 4 Setup
 
-Guide for preparing a Raspberry Pi 3 (Model B / B+) to act as a headless home server. Application-specific setup (Docker, nginx, etc.) is covered in separate docs.
+Guide for preparing a Raspberry Pi 4 (Model B) to act as a headless home server. Application-specific setup (Docker, nginx, etc.) is covered in separate docs.
 
 ## Contents
 
@@ -13,12 +13,16 @@ Guide for preparing a Raspberry Pi 3 (Model B / B+) to act as a headless home se
 - [6. Remote SSH Access (On-Demand)](#6-remote-ssh-access-on-demand)
 - [7. Network Configuration](#7-network-configuration)
 - [8. Limit Journal Size](#8-limit-journal-size)
+- [Appendix](#appendix)
+  - [A. Thermal Monitoring](#a-thermal-monitoring)
+  - [B. USB SSD Boot](#b-usb-ssd-boot)
 
 ## Prerequisites
 
-- Raspberry Pi 3 (Model B or B+)
-- MicroSD card — 16 GB minimum, A1/A2-rated from a reputable brand (SanDisk, Samsung, Kingston). Cheap cards are a common cause of a "slow" Pi.
-- Power supply (5V / 2.5A micro-USB)
+- Raspberry Pi 4 Model B (any RAM variant: 2 / 4 / 8 GB)
+- MicroSD card — 16 GB minimum, A1/A2-rated from a reputable brand (SanDisk, Samsung, Kingston). For better performance and durability, a USB 3.0 SSD is a strong alternative (Pi 4 supports native USB boot).
+- Power supply — 5V / 3A **USB-C**. Official Raspberry Pi supply is strongly recommended; undervoltage with generic chargers is a common cause of instability.
+- **Cooling** — the Pi 4 runs hotter than the Pi 3 and will throttle under load without cooling. Use at minimum a heatsink; for always-on server use a case with a small fan or a passive metal case is ideal.
 - Ethernet cable — recommended for first-time setup, regardless of how the Pi will connect long-term
 - A computer to flash the SD card
 
@@ -26,23 +30,22 @@ Guide for preparing a Raspberry Pi 3 (Model B / B+) to act as a headless home se
 
 ## 1. Choose the OS
 
-For a Pi 3 used as a server, use **Raspberry Pi OS (Legacy, 32-bit) Lite**.
+For a Pi 4 used as a server, use **Raspberry Pi OS (64-bit) Lite**.
 
 ### Why this version
 
 | Factor | Reason |
 |---|---|
 | **Lite** (no desktop) | Boots to CLI. Much lower idle RAM usage than the Full image. Fewer background processes and a smaller attack surface. |
-| **Legacy** | Each Raspberry Pi OS release is based on a Debian stable release. When a new Debian version is released, Raspberry Pi Foundation promotes its image to be the default and relabels the previous one as "Legacy". Legacy is **not** unmaintained — it still receives security updates and is the more mature, better-tested choice for older hardware like the Pi 3. The newest (non-Legacy) image is typically too fresh for production use on a low-resource device. |
-| **32-bit** | The Pi 3 has 1 GB RAM. 32-bit uses less memory per process. 64-bit's advantages (>4 GB RAM, larger binaries) don't apply here. |
+| **64-bit** | The Pi 4 has a 64-bit ARM Cortex-A72 CPU and at least 2 GB RAM — enough that 64-bit's advantages (modern toolchains, support for >4 GB RAM, better performance in many workloads, broader software ecosystem) outweigh the slightly higher memory overhead. |
+| **Current (non-Legacy)** | Unlike the Pi 3, the Pi 4 is well-supported by the newest Raspberry Pi OS release and has plenty of resources to absorb any extra overhead. If maximum stability matters more than newness, Legacy is a valid fallback. |
 
-### Options to avoid on a Pi 3 server
+### Options to avoid on a Pi 4 server
 
 | Image | Why skip |
 |---|---|
 | Raspberry Pi OS Full (any version) | Ships with a desktop environment you don't need on a server. |
-| Raspberry Pi OS (non-Legacy) | Tracks the newest Debian release — more bloat and less battle-tested on Pi 3. |
-| 64-bit variants | Wastes RAM on a 1 GB device. |
+| Raspberry Pi OS (32-bit) | Caps addressable RAM per process at ~3 GB and limits the 64-bit software ecosystem. No benefit on a Pi 4. |
 
 ### Installing a GUI later (on demand)
 
@@ -62,16 +65,16 @@ Exit the desktop session to return to the CLI. This keeps the Pi in lean headles
 
 1. Download **Raspberry Pi Imager** from [raspberrypi.com/software](https://www.raspberrypi.com/software/).
 2. Insert the MicroSD card into your computer.
-3. Open Imager and click **Choose Device** → **Raspberry Pi 3**.
-4. Click **Choose OS** → **Raspberry Pi OS (other)** → **Raspberry Pi OS (Legacy, 32-bit) Lite**.
-5. Click **Choose Storage** → select the MicroSD card.
+3. Open Imager and click **Choose Device** → **Raspberry Pi 4**.
+4. Click **Choose OS** → **Raspberry Pi OS (other)** → **Raspberry Pi OS Lite (64-bit)**.
+5. Click **Choose Storage** → select the MicroSD card (or USB SSD if booting from USB).
 6. Click **Next** → when prompted *"Would you like to apply OS customisation settings?"*, click **Edit Settings**.
 
 ### 2.1 Customisation — General tab
 
 | Setting | Value |
 |---|---|
-| Set hostname | `rpi-3` (or any name you prefer) — accessible on the LAN as `rpi-3.local` |
+| Set hostname | `rpi-4` (or any name you prefer) — accessible on the LAN as `rpi-4.local` |
 | Set username and password | Your own username and a strong password. Avoid the legacy default `pi`. |
 | Set locale settings | Your timezone (e.g. `America/Bogota`) and keyboard layout (e.g. `us`) |
 
@@ -100,7 +103,7 @@ Click **Save** → **Yes** to apply customisation → **Yes** to confirm erase �
 
 ## 3. First Boot
 
-1. Insert the MicroSD card into the Pi.
+1. Insert the MicroSD card into the Pi (or plug in the SSD if booting from USB).
 2. Plug in an Ethernet cable to your router.
 3. Connect power — no monitor or keyboard needed.
 4. Wait ~1–2 minutes for first boot. The Pi expands the filesystem and applies the imager customisation.
@@ -110,7 +113,7 @@ Click **Save** → **Yes** to apply customisation → **Yes** to confirm erase �
 From your laptop on the same LAN:
 
 ```bash
-ssh <your-username>@rpi-3.local
+ssh <your-username>@rpi-4.local
 ```
 
 If `.local` (mDNS) doesn't resolve, find the Pi's IP from your router's DHCP client list and use it directly:
@@ -147,16 +150,17 @@ sudo reboot
 Reconnect via SSH after ~30 seconds:
 
 ```bash
-ssh <your-username>@rpi-3.local
+ssh <your-username>@rpi-4.local
 ```
 
 ### Verify the system is healthy
 
 ```bash
-uname -a              # kernel version
+uname -a              # kernel version (should show aarch64 on 64-bit OS)
 cat /etc/os-release   # OS version
 free -h               # RAM usage
 df -h /               # disk usage on the root partition
+vcgencmd measure_temp # SoC temperature — keep an eye on this on the Pi 4
 ```
 
 ---
@@ -195,7 +199,7 @@ For a test/dev server, the simplest safe approach is to keep SSH **LAN-only by d
 
 - SSH listens on port 22 with whatever auth you configured (password or key).
 - No SSH port-forward on the router → SSH is invisible from the internet.
-- Locally, connect as usual: `ssh <your-username>@rpi-3.local` (or via the Pi's LAN IP).
+- Locally, connect as usual: `ssh <your-username>@rpi-4.local` (or via the Pi's LAN IP).
 
 ### Temporary remote access
 
@@ -235,7 +239,7 @@ If you find yourself opening/closing the port-forward often, it's worth revisiti
 
 For a server, you want a **predictable address on the home LAN** so you can always SSH to the same IP, set up port-forwards, reverse proxies, etc. The approach below assigns a pure static IP to the Ethernet interface.
 
-If the Pi is later moved to a different network, the static config must be updated for that subnet, or temporarily switched back to DHCP (see 7.7).
+If the Pi is later moved to a different network, the static config must be updated for that subnet, or temporarily switched back to DHCP (see 7.2.6).
 
 ### 7.1 Identify the active network stack
 
@@ -281,7 +285,7 @@ sudo nmcli connection modify eth0-home ipv4.method manual ipv4.addresses <static
 
 Replace:
 
-- `<static-ip>` — the fixed LAN IP (e.g. `192.168.40.201`). Must be within the router's subnet and outside the DHCP pool to avoid conflicts.
+- `<static-ip>` — the fixed LAN IP (e.g. `192.168.40.202`). Must be within the router's subnet and outside the DHCP pool to avoid conflicts.
 - `<gateway-ip>` — the router's LAN IP (e.g. `192.168.40.1`).
 
 What each setting does:
@@ -382,5 +386,92 @@ sudo systemctl restart systemd-journald
 ```bash
 sudo journalctl --vacuum-size=100M
 ```
+
+---
+
+## Appendix
+
+### A. Thermal Monitoring
+
+The Pi 4's Cortex-A72 generates more heat than the Pi 3. At **80°C** the firmware throttles the CPU, silently degrading performance.
+
+#### Check temperature
+
+```bash
+vcgencmd measure_temp
+```
+
+| Temperature | Status |
+|---|---|
+| 35–55°C | Normal idle / light load |
+| 55–70°C | Under load, healthy |
+| 70–80°C | Getting warm — check airflow |
+| 80°C+ | Throttling active — CPU is being slowed down |
+
+#### Check if throttling has occurred since boot
+
+```bash
+vcgencmd get_throttled
+```
+
+`throttled=0x0` = all clear. Any other value means throttling occurred at some point.
+
+#### Cooling options
+
+| Option | Cost | Notes |
+|---|---|---|
+| Bare heatsinks | ~$3 | Drops ~10°C. Enough for light server use. |
+| Passive metal case | ~$15 | Entire case acts as heatsink. Silent, great for always-on servers. |
+| Case with fan | ~$10–20 | Active cooling. Keeps under 50°C even under full load. |
+
+For a test server running nginx and a few apps, bare heatsinks or a passive case is usually sufficient.
+
+---
+
+### B. USB SSD Boot
+
+The Pi 4 supports booting directly from a USB 3.0 drive, bypassing the SD card entirely. An SSD is **5–10x faster** than an SD card for random I/O and far more durable (no write-wear concerns).
+
+#### When it's worth it
+
+- Running databases, Docker with frequent image pulls, or anything write-heavy
+- Want faster boot, faster `apt`, faster everything
+- Tired of SD cards wearing out
+
+#### What you need
+
+- A USB 3.0 SSD (any capacity; 120 GB+ is cheap) with a USB-to-SATA adapter or a USB SSD enclosure
+- Or a USB 3.0 thumb drive (faster than SD but slower than SSD — middle ground)
+
+#### Steps
+
+1. **Update the bootloader** to support USB boot (most Pi 4 firmware since 2020 already does):
+   ```bash
+   sudo apt update && sudo apt install -y rpi-eeprom
+   sudo rpi-eeprom-update -a
+   sudo reboot
+   ```
+
+2. **Verify USB boot is enabled:**
+   ```bash
+   vcgencmd bootloader_config | grep BOOT_ORDER
+   ```
+   `BOOT_ORDER=0xf41` means it tries SD first, then USB. `0xf14` means USB first, then SD. Either works if the SD card is removed.
+
+3. **Flash the OS to the SSD** using Raspberry Pi Imager — same process as flashing an SD card but select the USB drive as the storage target.
+
+4. **Remove the SD card**, plug in the SSD to a **USB 3.0 port** (the blue ones), and power on.
+
+5. **Verify** after boot:
+   ```bash
+   lsblk
+   ```
+   Root (`/`) should be mounted from `/dev/sda` (USB) instead of `/dev/mmcblk0` (SD).
+
+#### Notes
+
+- Use the **blue USB 3.0 ports** — the black USB 2.0 ports are much slower and defeat the purpose.
+- Some cheap USB-to-SATA adapters have compatibility issues with the Pi. Well-known working adapters include StarTech and Sabrent.
+- You can keep an SD card inserted as a fallback boot device.
 
 ---
